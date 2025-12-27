@@ -2,6 +2,7 @@ import argparse
 import re
 import sys
 import textwrap
+from pathlib import Path
 
 from vidius.api_client import VideoGenerator
 from vidius.config import settings
@@ -11,39 +12,65 @@ from vidius.history import HistoryManager
 def generate_filename(prompt: str) -> str:
     """Generate a sane filename from the prompt."""
     sane_prompt = re.sub(r"[^a-zA-Z0-9_]+", "_", prompt)
-    return "_".join(sane_prompt.split("_")[:5]) + ".mp4"
+    filename = "_".join(sane_prompt.split("_")[:5]) + ".mp4"
+    return filename
+
+
+def resolve_output_path(filename_or_path: str) -> Path:
+    """
+    Resolve the final output path.
+    If the user provided path is absolute or has a parent directory part
+    (e.g. './vid.mp4' or '/tmp/vid.mp4'), use it as is.
+    Otherwise, save it to the configured output directory.
+    """
+    path = Path(filename_or_path)
+
+    # If the user explicitly gave a path with separators, respect it.
+    if len(path.parts) > 1:
+        return path
+
+    # Otherwise, place it in the default output directory
+    output_dir = settings.output_dir
+    if not output_dir.exists():
+        output_dir.mkdir(parents=True, exist_ok=True)
+
+    return output_dir / filename_or_path
 
 
 def main() -> None:
-    epilog_text = textwrap.dedent("""
+    epilog_text = textwrap.dedent(f"""
     Defaults:
       - Duration: 8 seconds
       - Aspect Ratio: 16:9
       - Audio: Enabled
       - Enhance Prompt: Enabled
       - Person Generation: allow_adult
+      - Output Directory: {settings.output_dir}
       - Output File: Generated from prompt
 
     Examples:
-      1. Quick Start:
+      1. Quick Start (Saves to default dir):
          vidius "A cyberpunk city in the rain"
 
       2. Image-to-Video (Start from Image):
-         vidius "The water flows" --image start_frame.png
+         vidius "The water flows" --image river_start.png
 
       3. Vertical Video (Shorts/Reels):
          vidius "A dancer on stage" -ar 9:16 -d 6
 
-      4. Custom Output Filename:
+      4. Custom Output Filename (In default dir):
          vidius "A quiet beach" -o my_beach.mp4
+         
+      5. Custom Absolute Path (Overrides default dir):
+         vidius "A quiet beach" -o ./local_beach.mp4
 
-      5. Raw Generation (No Audio, No AI Rewrite):
+      6. Raw Generation (No Audio, No AI Rewrite):
          vidius "Abstract shapes" --no-audio --no-enhance
 
-      6. Negative Prompting:
+      7. Negative Prompting:
          vidius "A portrait" -np "blurry, distorted, dark"
 
-      7. History Management:
+      8. History Management:
          vidius -H          # List history
          vidius -r 3        # Rerun entry #3
     """)
@@ -85,7 +112,7 @@ def main() -> None:
 
     # Config overrides
     parser.add_argument("-m", "--model", default=settings.model_id, help="Vertex AI Model ID.")
-    parser.add_argument("-v", "--version", action="version", version="%(prog)s 0.1.2")
+    parser.add_argument("-v", "--version", action="version", version="%(prog)s 0.1.3")
 
     args = parser.parse_args()
     history_manager = HistoryManager()
@@ -113,21 +140,21 @@ def main() -> None:
         args.aspect_ratio = entry.get("aspect_ratio", args.aspect_ratio)
         args.person_generation = entry.get("person_generation", args.person_generation)
         args.negative_prompt = entry.get("negative_prompt", args.negative_prompt)
-        # We don't rerun image path from history automatically as the file might move,
-        # but could support it. For now, CLI args override or simple rerun.
-        # User can add -i explicitly if needed on rerun.
 
     if not args.prompt:
         parser.error("prompt is required unless --history or --rerun is used")
 
-    # Determine Output File
-    if not args.output_file:
-        args.output_file = generate_filename(args.prompt)
+    # Determine Output File/Path
+    raw_output = args.output_file
+    if not raw_output:
+        raw_output = generate_filename(args.prompt)
 
-    # Save to history
+    final_output_path = resolve_output_path(raw_output)
+
+    # Save to history (we save the full path now so we know where it went)
     new_entry = {
         "prompt": args.prompt,
-        "output_file": args.output_file,
+        "output_file": str(final_output_path),
         "duration": args.duration,
         "aspect_ratio": args.aspect_ratio,
         "no_audio": args.no_audio,
@@ -147,7 +174,7 @@ def main() -> None:
     try:
         generator.generate(
             prompt=args.prompt,
-            output_file=args.output_file,
+            output_file=str(final_output_path),
             duration=args.duration,
             aspect_ratio=args.aspect_ratio,
             generate_audio=not args.no_audio,
