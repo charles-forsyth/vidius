@@ -1,0 +1,4 @@
+PROJECT_ID=ucr-research-computing
+LOCATION=us-central1
+MODEL_ID=veo-3.0-generate-preview
+# GOOGLE_APPLICATION_CREDENTIALS=/path/to/your-service-account.json
