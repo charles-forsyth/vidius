@@ -43,7 +43,7 @@ def main() -> None:
       - Duration: 8 seconds
       - Aspect Ratio: 16:9
       - Audio: Enabled
-      - Enhance Prompt: Enabled
+      - Enhance Prompt: Always Enabled (Veo 3 requirement)
       - Person Generation: allow_adult
       - Output Directory: {settings.output_dir}
       - Output File: Generated from prompt
@@ -64,8 +64,8 @@ def main() -> None:
       5. Custom Absolute Path (Overrides default dir):
          vidius "A quiet beach" -o ./local_beach.mp4
 
-      6. Raw Generation (No Audio, No AI Rewrite):
-         vidius "Abstract shapes" --no-audio --no-enhance
+      6. Raw Generation (No Audio):
+         vidius "Abstract shapes" --no-audio
 
       7. Negative Prompting:
          vidius "A portrait" -np "blurry, distorted, dark"
@@ -88,15 +88,9 @@ def main() -> None:
     parser.add_argument("-i", "--image", help="Path to an input image for Image-to-Video generation.")
     parser.add_argument("-o", "--output-file", help="Output filename. Defaults to generated from prompt.")
     parser.add_argument("-d", "--duration", type=int, choices=[4, 6, 8], default=8, help="Video duration in seconds.")
-    parser.add_argument(
-        "-ar",
-        "--aspect-ratio",
-        default="16:9",
-        choices=["16:9", "9:16", "1:1", "21:9", "4:3", "3:4"],
-        help="Video aspect ratio.",
-    )
+    parser.add_argument("-ar", "--aspect-ratio", default="16:9", choices=["16:9", "9:16"], help="Video aspect ratio.")
     parser.add_argument("-na", "--no-audio", action="store_true", help="Disable audio generation.")
-    parser.add_argument("-ne", "--no-enhance", action="store_true", help="Disable prompt enhancement.")
+    # Removed -ne / --no-enhance as it is not supported by Veo 3
     parser.add_argument("-np", "--negative-prompt", help="Negative prompt to suppress elements.")
     parser.add_argument(
         "-pg",
@@ -112,7 +106,7 @@ def main() -> None:
 
     # Config overrides
     parser.add_argument("-m", "--model", default=settings.model_id, help="Vertex AI Model ID.")
-    parser.add_argument("-v", "--version", action="version", version="%(prog)s 0.1.3")
+    parser.add_argument("-v", "--version", action="version", version="%(prog)s 0.1.4")
 
     args = parser.parse_args()
     history_manager = HistoryManager()
@@ -136,7 +130,7 @@ def main() -> None:
 
         args.duration = entry.get("duration", args.duration)
         args.no_audio = entry.get("no_audio", args.no_audio)
-        args.no_enhance = entry.get("no_enhance", args.no_enhance)
+        # Removed no_enhance from rerun logic as well
         args.aspect_ratio = entry.get("aspect_ratio", args.aspect_ratio)
         args.person_generation = entry.get("person_generation", args.person_generation)
         args.negative_prompt = entry.get("negative_prompt", args.negative_prompt)
@@ -158,7 +152,6 @@ def main() -> None:
         "duration": args.duration,
         "aspect_ratio": args.aspect_ratio,
         "no_audio": args.no_audio,
-        "no_enhance": args.no_enhance,
         "person_generation": args.person_generation,
         "negative_prompt": args.negative_prompt,
         "image": args.image,
@@ -178,7 +171,7 @@ def main() -> None:
             duration=args.duration,
             aspect_ratio=args.aspect_ratio,
             generate_audio=not args.no_audio,
-            enhance_prompt=not args.no_enhance,
+            # enhance_prompt=not args.no_enhance, # Removed: Always True
             person_generation=args.person_generation,
             negative_prompt=args.negative_prompt,
             image_path=args.image,

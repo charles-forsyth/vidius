@@ -8,7 +8,7 @@ If run without flags, `vidius` uses:
 *   **Duration**: 8 seconds
 *   **Aspect Ratio**: 16:9 (Widescreen)
 *   **Audio**: Enabled
-*   **Enhance Prompt**: Enabled (Google's AI rewrites prompts for better quality)
+*   **Enhance Prompt**: Always Enabled (Required by Veo 3)
 *   **Person Generation**: `allow_adult`
 *   **Output Directory**: `~/Videos/Vidius` (Configurable in `.env`)
 *   **Output File**: Generated from prompt (e.g., `A_cat_eating_pizza.mp4`)
@@ -32,7 +32,7 @@ Create a 6-second vertical video.
 ```bash
 vidius "A dancer on stage" -ar 9:16 -d 6
 ```
-*   **Supported Ratios**: `16:9`, `9:16`, `1:1`, `21:9`, `4:3`, `3:4`
+*   **Supported Ratios**: `16:9`, `9:16`
 *   **Supported Durations**: `4`, `6`, `8`
 
 ### 4. Custom Output Filename
@@ -47,10 +47,10 @@ Specify a path with a directory separator (like `./` or `/tmp/`) to override the
 vidius "A quiet beach" -o ./local_beach.mp4
 ```
 
-### 6. Raw Generation
-Disable audio and prompt enhancement for exact control.
+### 6. Raw Generation (Audio Only)
+Disable audio for exact control. (Prompt enhancement is always on).
 ```bash
-vidius "Abstract geometric shapes" --no-audio --no-enhance
+vidius "Abstract geometric shapes" --no-audio
 ```
 
 ### 7. Negative Prompting

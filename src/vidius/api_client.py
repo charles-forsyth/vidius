@@ -20,7 +20,7 @@ class VideoGenerator:
         duration: int = 8,
         aspect_ratio: str = "16:9",
         generate_audio: bool = True,
-        enhance_prompt: bool = True,
+        # enhance_prompt removed as it must be True for Veo 3
         person_generation: str = "allow_adult",
         negative_prompt: Optional[str] = None,
         number_of_videos: int = 1,
@@ -54,7 +54,10 @@ class VideoGenerator:
             number_of_videos=number_of_videos,
             duration_seconds=duration,
             person_generation=person_generation,
-            enhance_prompt=enhance_prompt,
+            # enhance_prompt=True, # Implicitly True for Veo 3, or remove if causing issues.
+            # If explicit True caused the error, we remove it.
+            # But the error said "cannot be disabled", meaning we passed False.
+            # Passing nothing or True should be fine. I'll omit it to let API default.
             generate_audio=generate_audio,
             negative_prompt=negative_prompt,
         )
