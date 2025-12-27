@@ -20,7 +20,13 @@ Just provide a prompt.
 vidius "A cyberpunk city in the rain at night"
 ```
 
-### 2. Vertical Video (Shorts/Reels)
+### 2. Image-to-Video (Start from Image)
+Provide an input image to start the video generation.
+```bash
+vidius "The water begins to flow and birds fly" --image river_start.png
+```
+
+### 3. Vertical Video (Shorts/Reels)
 Create a 6-second vertical video.
 ```bash
 vidius "A dancer on stage" -ar 9:16 -d 6
@@ -28,25 +34,25 @@ vidius "A dancer on stage" -ar 9:16 -d 6
 *   **Supported Ratios**: `16:9`, `9:16`, `1:1`, `21:9`, `4:3`, `3:4`
 *   **Supported Durations**: `4`, `6`, `8`
 
-### 3. Custom Output Filename
+### 4. Custom Output Filename
 Specify the output file name.
 ```bash
 vidius "A quiet beach" -o my_beach_video.mp4
 ```
 
-### 4. Raw Generation
+### 5. Raw Generation
 Disable audio and prompt enhancement for exact control.
 ```bash
 vidius "Abstract geometric shapes" --no-audio --no-enhance
 ```
 
-### 5. Negative Prompting
+### 6. Negative Prompting
 Exclude specific elements (e.g., blurry or distorted features).
 ```bash
 vidius "A sharp portrait of a man" -np "blurry, distorted, dark, low resolution"
 ```
 
-### 6. History Management
+### 7. History Management
 List past prompts and rerun them.
 ```bash
 # List history
@@ -56,7 +62,7 @@ vidius -H
 vidius -r 3
 ```
 
-### 7. Strict Person Policy
+### 8. Strict Person Policy
 Ensure no people are generated.
 ```bash
 vidius "A crowded market street" -pg dont_allow

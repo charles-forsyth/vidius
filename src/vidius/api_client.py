@@ -1,4 +1,6 @@
+import mimetypes
 import time
+from pathlib import Path
 from typing import Optional
 
 from google import genai
@@ -22,6 +24,7 @@ class VideoGenerator:
         person_generation: str = "allow_adult",
         negative_prompt: Optional[str] = None,
         number_of_videos: int = 1,
+        image_path: Optional[str] = None,
     ) -> None:
         """Generates a video using the Vertex AI VEO model."""
 
@@ -30,6 +33,21 @@ class VideoGenerator:
             f"Config: duration={duration}, aspect_ratio={aspect_ratio}, "
             f"audio={generate_audio}, model={settings.model_id}"
         )
+
+        input_image = None
+        if image_path:
+            path = Path(image_path)
+            if not path.exists():
+                raise FileNotFoundError(f"Image file not found: {image_path}")
+
+            # Read image as bytes
+            image_bytes = path.read_bytes()
+            mime_type, _ = mimetypes.guess_type(path)
+            if not mime_type:
+                mime_type = "image/png"  # Default fallback
+
+            print(f"Using input image: {image_path} ({mime_type})")
+            input_image = types.Image(image_bytes=image_bytes, mime_type=mime_type)
 
         config = types.GenerateVideosConfig(
             aspect_ratio=aspect_ratio,
@@ -45,6 +63,7 @@ class VideoGenerator:
             model=settings.model_id,
             prompt=prompt,
             config=config,
+            image=input_image,
         )
 
         print(f"Operation started: {operation.name}")

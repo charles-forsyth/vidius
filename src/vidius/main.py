@@ -28,19 +28,22 @@ def main() -> None:
       1. Quick Start:
          vidius "A cyberpunk city in the rain"
 
-      2. Vertical Video (Shorts/Reels):
+      2. Image-to-Video (Start from Image):
+         vidius "The water flows" --image start_frame.png
+
+      3. Vertical Video (Shorts/Reels):
          vidius "A dancer on stage" -ar 9:16 -d 6
 
-      3. Custom Output Filename:
+      4. Custom Output Filename:
          vidius "A quiet beach" -o my_beach.mp4
 
-      4. Raw Generation (No Audio, No AI Rewrite):
+      5. Raw Generation (No Audio, No AI Rewrite):
          vidius "Abstract shapes" --no-audio --no-enhance
 
-      5. Negative Prompting:
+      6. Negative Prompting:
          vidius "A portrait" -np "blurry, distorted, dark"
 
-      6. History Management:
+      7. History Management:
          vidius -H          # List history
          vidius -r 3        # Rerun entry #3
     """)
@@ -55,6 +58,7 @@ def main() -> None:
     parser.add_argument("prompt", nargs="?", default=None, help="The text prompt for the video.")
 
     # Options
+    parser.add_argument("-i", "--image", help="Path to an input image for Image-to-Video generation.")
     parser.add_argument("-o", "--output-file", help="Output filename. Defaults to generated from prompt.")
     parser.add_argument("-d", "--duration", type=int, choices=[4, 6, 8], default=8, help="Video duration in seconds.")
     parser.add_argument(
@@ -81,7 +85,7 @@ def main() -> None:
 
     # Config overrides
     parser.add_argument("-m", "--model", default=settings.model_id, help="Vertex AI Model ID.")
-    parser.add_argument("-v", "--version", action="version", version="%(prog)s 0.1.1")
+    parser.add_argument("-v", "--version", action="version", version="%(prog)s 0.1.2")
 
     args = parser.parse_args()
     history_manager = HistoryManager()
@@ -109,6 +113,9 @@ def main() -> None:
         args.aspect_ratio = entry.get("aspect_ratio", args.aspect_ratio)
         args.person_generation = entry.get("person_generation", args.person_generation)
         args.negative_prompt = entry.get("negative_prompt", args.negative_prompt)
+        # We don't rerun image path from history automatically as the file might move,
+        # but could support it. For now, CLI args override or simple rerun.
+        # User can add -i explicitly if needed on rerun.
 
     if not args.prompt:
         parser.error("prompt is required unless --history or --rerun is used")
@@ -127,6 +134,7 @@ def main() -> None:
         "no_enhance": args.no_enhance,
         "person_generation": args.person_generation,
         "negative_prompt": args.negative_prompt,
+        "image": args.image,
     }
     history_manager.save(new_entry)
 
@@ -146,6 +154,7 @@ def main() -> None:
             enhance_prompt=not args.no_enhance,
             person_generation=args.person_generation,
             negative_prompt=args.negative_prompt,
+            image_path=args.image,
         )
     except Exception as e:
         print(f"Error: {e}")
