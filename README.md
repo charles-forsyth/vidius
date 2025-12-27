@@ -10,12 +10,13 @@ If run without flags, `vidius` uses:
 *   **Audio**: Enabled
 *   **Enhance Prompt**: Enabled (Google's AI rewrites prompts for better quality)
 *   **Person Generation**: `allow_adult`
+*   **Output Directory**: `~/Videos/Vidius` (Configurable in `.env`)
 *   **Output File**: Generated from prompt (e.g., `A_cat_eating_pizza.mp4`)
 
 ## Usage Examples
 
 ### 1. Quick Start
-Just provide a prompt.
+Just provide a prompt. The video saves to `~/Videos/Vidius/`.
 ```bash
 vidius "A cyberpunk city in the rain at night"
 ```
@@ -35,24 +36,30 @@ vidius "A dancer on stage" -ar 9:16 -d 6
 *   **Supported Durations**: `4`, `6`, `8`
 
 ### 4. Custom Output Filename
-Specify the output file name.
+Specify a filename to save into the default directory (`~/Videos/Vidius/my_beach_video.mp4`).
 ```bash
 vidius "A quiet beach" -o my_beach_video.mp4
 ```
 
-### 5. Raw Generation
+### 5. Custom Output Path
+Specify a path with a directory separator (like `./` or `/tmp/`) to override the default directory.
+```bash
+vidius "A quiet beach" -o ./local_beach.mp4
+```
+
+### 6. Raw Generation
 Disable audio and prompt enhancement for exact control.
 ```bash
 vidius "Abstract geometric shapes" --no-audio --no-enhance
 ```
 
-### 6. Negative Prompting
+### 7. Negative Prompting
 Exclude specific elements (e.g., blurry or distorted features).
 ```bash
 vidius "A sharp portrait of a man" -np "blurry, distorted, dark, low resolution"
 ```
 
-### 7. History Management
+### 8. History Management
 List past prompts and rerun them.
 ```bash
 # List history
@@ -62,7 +69,7 @@ vidius -H
 vidius -r 3
 ```
 
-### 8. Strict Person Policy
+### 9. Strict Person Policy
 Ensure no people are generated.
 ```bash
 vidius "A crowded market street" -pg dont_allow
