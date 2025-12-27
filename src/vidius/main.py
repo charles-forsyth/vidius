@@ -1,6 +1,7 @@
 import argparse
 import re
 import sys
+import textwrap
 
 from vidius.api_client import VideoGenerator
 from vidius.config import settings
@@ -14,9 +15,40 @@ def generate_filename(prompt: str) -> str:
 
 
 def main() -> None:
+    epilog_text = textwrap.dedent("""
+    Defaults:
+      - Duration: 8 seconds
+      - Aspect Ratio: 16:9
+      - Audio: Enabled
+      - Enhance Prompt: Enabled
+      - Person Generation: allow_adult
+      - Output File: Generated from prompt
+
+    Examples:
+      1. Quick Start:
+         vidius "A cyberpunk city in the rain"
+
+      2. Vertical Video (Shorts/Reels):
+         vidius "A dancer on stage" -ar 9:16 -d 6
+
+      3. Custom Output Filename:
+         vidius "A quiet beach" -o my_beach.mp4
+
+      4. Raw Generation (No Audio, No AI Rewrite):
+         vidius "Abstract shapes" --no-audio --no-enhance
+
+      5. Negative Prompting:
+         vidius "A portrait" -np "blurry, distorted, dark"
+
+      6. History Management:
+         vidius -H          # List history
+         vidius -r 3        # Rerun entry #3
+    """)
+
     parser = argparse.ArgumentParser(
         description="Vidius: Professional CLI for Vertex AI VEO Video Generation",
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog=epilog_text,
     )
 
     # Core arguments
@@ -49,7 +81,7 @@ def main() -> None:
 
     # Config overrides
     parser.add_argument("-m", "--model", default=settings.model_id, help="Vertex AI Model ID.")
-    parser.add_argument("-v", "--version", action="version", version="%(prog)s 0.1.0")
+    parser.add_argument("-v", "--version", action="version", version="%(prog)s 0.1.1")
 
     args = parser.parse_args()
     history_manager = HistoryManager()
