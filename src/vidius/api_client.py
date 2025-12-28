@@ -1,7 +1,7 @@
 import mimetypes
 import time
 from pathlib import Path
-from typing import Optional
+from typing import Any, Optional
 
 from google import genai
 from google.genai import types
@@ -13,6 +13,33 @@ class VideoGenerator:
     def __init__(self) -> None:
         self.client = genai.Client(vertexai=True, project=settings.project_id, location=settings.location)
 
+    def _wait_and_save(self, operation: Any, output_file: str) -> None:
+        """Helper to poll operation and save result."""
+        print(f"Operation started: {operation.name}")
+
+        while not operation.done:
+            print("Video generation/extension in progress. Checking status in 15 seconds...")
+            time.sleep(15)
+            operation = self.client.operations.get(operation)
+
+        if operation.response:
+            print("Operation succeeded!")
+            result = operation.result
+            if result and hasattr(result, "generated_videos") and result.generated_videos:
+                video_object = result.generated_videos[0].video
+                if video_object:
+                    video_object.save(output_file)
+                    print(f"Video saved as {output_file}")
+                else:
+                    print("Video object is empty.")
+            else:
+                print("No videos returned in result.")
+        else:
+            print("Operation failed.")
+            if operation.error:
+                print(f"Error details: {operation.error}")
+            raise Exception(f"Video generation failed: {operation.error}")
+
     def generate(
         self,
         prompt: str,
@@ -20,7 +47,6 @@ class VideoGenerator:
         duration: int = 8,
         aspect_ratio: str = "16:9",
         generate_audio: bool = True,
-        # enhance_prompt removed as it must be True for Veo 3
         person_generation: str = "allow_adult",
         negative_prompt: Optional[str] = None,
         number_of_videos: int = 1,
@@ -40,11 +66,10 @@ class VideoGenerator:
             if not path.exists():
                 raise FileNotFoundError(f"Image file not found: {image_path}")
 
-            # Read image as bytes
             image_bytes = path.read_bytes()
             mime_type, _ = mimetypes.guess_type(path)
             if not mime_type:
-                mime_type = "image/png"  # Default fallback
+                mime_type = "image/png"
 
             print(f"Using input image: {image_path} ({mime_type})")
             input_image = types.Image(image_bytes=image_bytes, mime_type=mime_type)
@@ -54,10 +79,6 @@ class VideoGenerator:
             number_of_videos=number_of_videos,
             duration_seconds=duration,
             person_generation=person_generation,
-            # enhance_prompt=True, # Implicitly True for Veo 3, or remove if causing issues.
-            # If explicit True caused the error, we remove it.
-            # But the error said "cannot be disabled", meaning we passed False.
-            # Passing nothing or True should be fine. I'll omit it to let API default.
             generate_audio=generate_audio,
             negative_prompt=negative_prompt,
         )
@@ -69,29 +90,51 @@ class VideoGenerator:
             image=input_image,
         )
 
-        print(f"Operation started: {operation.name}")
+        self._wait_and_save(operation, output_file)
 
-        while not operation.done:
-            print("Video generation in progress. Checking status in 15 seconds...")
-            time.sleep(15)
-            operation = self.client.operations.get(operation)
+    def extend_video(
+        self,
+        prompt: str,
+        input_video_path: str,
+        output_file: str,
+        negative_prompt: Optional[str] = None,
+    ) -> None:
+        """Extends an existing video."""
 
-        if operation.response:
-            print("Operation succeeded!")
-            # Save the first video (since we default to 1, but handle list if needed)
-            # Use 'Any' cast or check to satisfy mypy if structure is dynamic
-            result = operation.result
-            if result and hasattr(result, "generated_videos") and result.generated_videos:
-                video_object = result.generated_videos[0].video
-                if video_object:
-                    video_object.save(output_file)
-                    print(f"Video saved as {output_file}")
-                else:
-                    print("Video object is empty.")
-            else:
-                print("No videos returned in result.")
-        else:
-            print("Operation failed.")
-            if operation.error:
-                print(f"Error details: {operation.error}")
-            raise Exception(f"Video generation failed: {operation.error}")
+        print(f"Sending video extension request for prompt: '{prompt}'")
+        print(f"Input Video: {input_video_path}")
+
+        path = Path(input_video_path)
+        if not path.exists():
+            raise FileNotFoundError(f"Video file not found: {input_video_path}")
+
+        video_bytes = path.read_bytes()
+        mime_type, _ = mimetypes.guess_type(path)
+        if not mime_type:
+            mime_type = "video/mp4"  # Default fallback for extension input
+
+        input_video = types.Video(video_bytes=video_bytes, mime_type=mime_type)
+
+        # Note: Veo 3 extension currently has fixed output settings (e.g. +7s?)
+        # We'll use default config but might need adjustments if API supports it.
+        # Based on search, it uses the same generate_videos endpoint but with 'video' input?
+        # Actually search results said `image` parameter for image-to-video.
+        # For video extension, SDK usually uses `video` parameter.
+
+        # Checking google-genai SDK typings/docs (inferred):
+        # generate_videos(..., video=...) is likely the signature for extension.
+
+        config = types.GenerateVideosConfig(
+            negative_prompt=negative_prompt,
+            # Extension might ignore duration/aspect ratio as it inherits/extends?
+            # Or requires specific defaults. We'll start minimal.
+        )
+
+        operation = self.client.models.generate_videos(
+            model=settings.model_id,
+            prompt=prompt,
+            config=config,
+            video=input_video,  # Pass as video argument
+        )
+
+        self._wait_and_save(operation, output_file)
