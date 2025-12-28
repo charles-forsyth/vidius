@@ -88,7 +88,9 @@ class VideoGenerator:
             for ref_path in reference_image_paths:
                 img = self._load_image(ref_path)
                 # Wrap in VideoGenerationReferenceImage
-                ref_images.append(types.VideoGenerationReferenceImage(image=img))
+                # We default to "STYLE" as it's a common use case, but API requires a value.
+                # Cast to Any to satisfy mypy's strict enum check if the type is missing/mismatched.
+                ref_images.append(types.VideoGenerationReferenceImage(image=img, reference_type=cast(Any, "STYLE")))
 
         # Cast ref_images to Any or the correct type list to satisfy mypy if needed
         config_ref_images = cast(Any, ref_images) if ref_images else None
