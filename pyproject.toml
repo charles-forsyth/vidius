@@ -1,6 +1,6 @@
 [project]
 name = "vidius"
-version = "0.1.5"
+version = "0.1.6"
 description = "A professional CLI for generating videos using Vertex AI VEO models."
 readme = "README.md"
 requires-python = ">=3.9"
