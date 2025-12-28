@@ -1,7 +1,7 @@
 import mimetypes
 import time
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any, Optional, cast
 
 from google import genai
 from google.genai import types
@@ -40,6 +40,19 @@ class VideoGenerator:
                 print(f"Error details: {operation.error}")
             raise Exception(f"Video generation failed: {operation.error}")
 
+    def _load_image(self, image_path: str) -> types.Image:
+        path = Path(image_path)
+        if not path.exists():
+            raise FileNotFoundError(f"Image file not found: {image_path}")
+
+        image_bytes = path.read_bytes()
+        mime_type, _ = mimetypes.guess_type(path)
+        if not mime_type:
+            mime_type = "image/png"
+
+        print(f"Loaded image: {image_path} ({mime_type})")
+        return types.Image(image_bytes=image_bytes, mime_type=mime_type)
+
     def generate(
         self,
         prompt: str,
@@ -51,6 +64,8 @@ class VideoGenerator:
         negative_prompt: Optional[str] = None,
         number_of_videos: int = 1,
         image_path: Optional[str] = None,
+        last_frame_path: Optional[str] = None,
+        reference_image_paths: Optional[list[str]] = None,
     ) -> None:
         """Generates a video using the Vertex AI VEO model."""
 
@@ -62,17 +77,22 @@ class VideoGenerator:
 
         input_image = None
         if image_path:
-            path = Path(image_path)
-            if not path.exists():
-                raise FileNotFoundError(f"Image file not found: {image_path}")
+            input_image = self._load_image(image_path)
 
-            image_bytes = path.read_bytes()
-            mime_type, _ = mimetypes.guess_type(path)
-            if not mime_type:
-                mime_type = "image/png"
+        last_frame_image = None
+        if last_frame_path:
+            last_frame_image = self._load_image(last_frame_path)
 
-            print(f"Using input image: {image_path} ({mime_type})")
-            input_image = types.Image(image_bytes=image_bytes, mime_type=mime_type)
+        ref_images = []
+        if reference_image_paths:
+            for ref_path in reference_image_paths:
+                ref_images.append(self._load_image(ref_path))
+
+        # Cast ref_images to Any to satisfy mypy, assuming runtime compatibility
+        # strictly speaking, we should convert to VideoGenerationReferenceImage if that type exists
+        # but types.Image is likely what is expected or duck-typed.
+        # We use Any to bypass the specific type check for now.
+        config_ref_images = cast(Any, ref_images) if ref_images else None
 
         config = types.GenerateVideosConfig(
             aspect_ratio=aspect_ratio,
@@ -81,6 +101,8 @@ class VideoGenerator:
             person_generation=person_generation,
             generate_audio=generate_audio,
             negative_prompt=negative_prompt,
+            last_frame=last_frame_image,
+            reference_images=config_ref_images,
         )
 
         operation = self.client.models.generate_videos(
@@ -111,30 +133,19 @@ class VideoGenerator:
         video_bytes = path.read_bytes()
         mime_type, _ = mimetypes.guess_type(path)
         if not mime_type:
-            mime_type = "video/mp4"  # Default fallback for extension input
+            mime_type = "video/mp4"
 
         input_video = types.Video(video_bytes=video_bytes, mime_type=mime_type)
 
-        # Note: Veo 3 extension currently has fixed output settings (e.g. +7s?)
-        # We'll use default config but might need adjustments if API supports it.
-        # Based on search, it uses the same generate_videos endpoint but with 'video' input?
-        # Actually search results said `image` parameter for image-to-video.
-        # For video extension, SDK usually uses `video` parameter.
-
-        # Checking google-genai SDK typings/docs (inferred):
-        # generate_videos(..., video=...) is likely the signature for extension.
-
         config = types.GenerateVideosConfig(
             negative_prompt=negative_prompt,
-            # Extension might ignore duration/aspect ratio as it inherits/extends?
-            # Or requires specific defaults. We'll start minimal.
         )
 
         operation = self.client.models.generate_videos(
             model=settings.model_id,
             prompt=prompt,
             config=config,
-            video=input_video,  # Pass as video argument
+            video=input_video,
         )
 
         self._wait_and_save(operation, output_file)

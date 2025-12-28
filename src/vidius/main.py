@@ -55,27 +55,26 @@ def main() -> None:
       2. Image-to-Video (Start from Image):
          vidius "The water flows" --image river_start.png
          
-      3. Extend Video (Continue a story):
+      3. Start & End Frames (Interpolation):
+         vidius "A flower blooming" --image bud.png --last-image flower.png
+         
+      4. Reference Images (Style/Character):
+         vidius "A knight fighting a dragon" --ref-image character_sheet.png --ref-image style_guide.png
+
+      5. Extend Video:
          vidius "The character walks into the portal" --extend-video part1.mp4
 
-      4. Vertical Video (Shorts/Reels):
+      6. Vertical Video (Shorts/Reels):
          vidius "A dancer on stage" -ar 9:16 -d 6
 
-      5. Custom Output Filename (In default dir):
+      7. Custom Output Filename:
          vidius "A quiet beach" -o my_beach.mp4
          
-      6. Custom Absolute Path (Overrides default dir):
-         vidius "A quiet beach" -o ./local_beach.mp4
-
-      7. Raw Generation (No Audio):
+      8. Raw Generation (No Audio):
          vidius "Abstract shapes" --no-audio
 
-      8. Negative Prompting:
+      9. Negative Prompting:
          vidius "A portrait" -np "blurry, distorted, dark"
-
-      9. History Management:
-         vidius -H          # List history
-         vidius -r 3        # Rerun entry #3
     """)
 
     parser = argparse.ArgumentParser(
@@ -88,7 +87,11 @@ def main() -> None:
     parser.add_argument("prompt", nargs="?", default=None, help="The text prompt for the video.")
 
     # Options
-    parser.add_argument("-i", "--image", help="Path to an input image for Image-to-Video generation.")
+    parser.add_argument("-i", "--image", help="Path to the START frame image.")
+    parser.add_argument("-li", "--last-image", help="Path to the END frame image (for interpolation).")
+    parser.add_argument(
+        "-ri", "--ref-image", action="append", help="Path to a REFERENCE image (can be used multiple times, max 3)."
+    )
     parser.add_argument("-e", "--extend-video", help="Path to an input video to extend.")
     parser.add_argument("-o", "--output-file", help="Output filename. Defaults to generated from prompt.")
     parser.add_argument("-d", "--duration", type=int, choices=[4, 6, 8], default=8, help="Video duration in seconds.")
@@ -109,7 +112,7 @@ def main() -> None:
 
     # Config overrides
     parser.add_argument("-m", "--model", default=settings.model_id, help="Vertex AI Model ID.")
-    parser.add_argument("-v", "--version", action="version", version="%(prog)s 0.1.5")
+    parser.add_argument("-v", "--version", action="version", version="%(prog)s 0.1.6")
 
     args = parser.parse_args()
     history_manager = HistoryManager()
@@ -160,6 +163,8 @@ def main() -> None:
         "person_generation": args.person_generation,
         "negative_prompt": args.negative_prompt,
         "image": args.image,
+        "last_image": args.last_image,
+        "ref_images": args.ref_image,
         "extend_video": args.extend_video,
     }
     history_manager.save(new_entry)
@@ -188,6 +193,8 @@ def main() -> None:
                 person_generation=args.person_generation,
                 negative_prompt=args.negative_prompt,
                 image_path=args.image,
+                last_frame_path=args.last_image,
+                reference_image_paths=args.ref_image,
             )
     except Exception as e:
         print(f"Error: {e}")
