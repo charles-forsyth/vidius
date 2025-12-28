@@ -86,12 +86,11 @@ class VideoGenerator:
         ref_images = []
         if reference_image_paths:
             for ref_path in reference_image_paths:
-                ref_images.append(self._load_image(ref_path))
+                img = self._load_image(ref_path)
+                # Wrap in VideoGenerationReferenceImage
+                ref_images.append(types.VideoGenerationReferenceImage(image=img))
 
-        # Cast ref_images to Any to satisfy mypy, assuming runtime compatibility
-        # strictly speaking, we should convert to VideoGenerationReferenceImage if that type exists
-        # but types.Image is likely what is expected or duck-typed.
-        # We use Any to bypass the specific type check for now.
+        # Cast ref_images to Any or the correct type list to satisfy mypy if needed
         config_ref_images = cast(Any, ref_images) if ref_images else None
 
         config = types.GenerateVideosConfig(
