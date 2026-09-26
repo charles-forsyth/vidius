@@ -44,3 +44,24 @@ def test_main_history():
         mock_hist_instance.display.assert_called_once()
         mock_gen_instance = MockGen.return_value
         mock_gen_instance.generate.assert_not_called()
+
+
+def test_model_alias_resolves():
+    from vidius.config import MODELS, settings
+
+    with (
+        patch("sys.argv", ["vidius", "test prompt", "-m", "lite"]),
+        patch("vidius.main.VideoGenerator"),
+        patch("vidius.main.HistoryManager"),
+    ):
+        main()
+    assert settings.model_id == MODELS["lite"]
+
+
+def test_client_uses_api_key():
+    from vidius import api_client
+    from vidius.config import settings
+
+    with patch.object(settings, "api_key", "fake-key"), patch("vidius.api_client.genai.Client") as MockClient:
+        api_client.VideoGenerator()
+    MockClient.assert_called_once_with(api_key="fake-key")

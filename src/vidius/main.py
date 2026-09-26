@@ -5,7 +5,7 @@ import textwrap
 from pathlib import Path
 
 from vidius.api_client import VideoGenerator
-from vidius.config import settings
+from vidius.config import MODELS, settings
 from vidius.history import HistoryManager
 
 
@@ -111,8 +111,13 @@ def main() -> None:
     parser.add_argument("-r", "--rerun", type=int, help="Rerun history entry by ID.")
 
     # Config overrides
-    parser.add_argument("-m", "--model", default=settings.model_id, help="Vertex AI Model ID.")
-    parser.add_argument("-v", "--version", action="version", version="%(prog)s 0.1.6")
+    parser.add_argument(
+        "-m",
+        "--model",
+        default=settings.model_id,
+        help="Veo model: standard, fast, lite, or a full model ID (default: Veo 3.1 standard).",
+    )
+    parser.add_argument("-v", "--version", action="version", version="%(prog)s 0.2.0")
 
     args = parser.parse_args()
     history_manager = HistoryManager()
@@ -170,8 +175,9 @@ def main() -> None:
     history_manager.save(new_entry)
 
     # Initialize Generator
-    if args.model != settings.model_id:
-        settings.model_id = args.model
+    model = MODELS.get(args.model, args.model)
+    if model != settings.model_id:
+        settings.model_id = model
 
     generator = VideoGenerator()
 

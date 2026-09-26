@@ -11,7 +11,10 @@ from vidius.config import settings
 
 class VideoGenerator:
     def __init__(self) -> None:
-        self.client = genai.Client(vertexai=True, project=settings.project_id, location=settings.location)
+        if settings.api_key:
+            self.client = genai.Client(api_key=settings.api_key)
+        else:
+            self.client = genai.Client(vertexai=True, project=settings.project_id, location=settings.location)
 
     def _wait_and_save(self, operation: Any, output_file: str) -> None:
         """Helper to poll operation and save result."""
@@ -67,7 +70,7 @@ class VideoGenerator:
         last_frame_path: Optional[str] = None,
         reference_image_paths: Optional[list[str]] = None,
     ) -> None:
-        """Generates a video using the Vertex AI VEO model."""
+        """Generates a video with Veo."""
 
         print(f"Sending video generation request for prompt: '{prompt}'")
         print(

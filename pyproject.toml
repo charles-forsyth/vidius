@@ -1,11 +1,11 @@
 [project]
 name = "vidius"
-version = "0.1.8"
+version = "0.2.0"
 description = "A professional CLI for generating videos using Vertex AI VEO models."
 readme = "README.md"
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 dependencies = [
-    "google-genai",
+    "google-genai>=1.50.0",
     "pydantic>=2.0",
     "pydantic-settings",
     "pandas",
