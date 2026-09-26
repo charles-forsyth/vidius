@@ -1,6 +1,19 @@
 # Vidius
 
-A professional CLI for generating videos using Vertex AI VEO models.
+A professional CLI for generating videos with Google's Veo 3.1 models.
+
+## Setup
+
+Put a Gemini API key (restricted to the Generative Language API) in `~/.config/vidius/.env` (chmod 600):
+
+```
+API_KEY=...
+OUTPUT_DIR=~/Videos/Vidius
+```
+
+Without `API_KEY`, vidius falls back to Vertex AI with Application Default Credentials (`PROJECT_ID`, `LOCATION`).
+
+Pick a tier with `-m standard|fast|lite` (default standard, Veo 3.1). Veo 3.0 and 2.0 were shut down on 2026-06-30.
 
 ## Defaults
 
