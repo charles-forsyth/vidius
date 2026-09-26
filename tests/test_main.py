@@ -65,3 +65,19 @@ def test_client_uses_api_key():
     with patch.object(settings, "api_key", "fake-key"), patch("vidius.api_client.genai.Client") as MockClient:
         api_client.VideoGenerator()
     MockClient.assert_called_once_with(api_key="fake-key")
+
+
+def test_api_key_mode_omits_generate_audio():
+    from unittest.mock import MagicMock
+
+    from vidius import api_client
+    from vidius.config import settings
+
+    with patch.object(settings, "api_key", "fake-key"), patch("vidius.api_client.genai.Client") as MockClient:
+        client = MagicMock()
+        MockClient.return_value = client
+        gen = api_client.VideoGenerator()
+        with patch.object(gen, "_wait_and_save"):
+            gen.generate(prompt="p", output_file="o.mp4", generate_audio=False)
+    cfg = client.models.generate_videos.call_args.kwargs["config"]
+    assert cfg.generate_audio is None
