@@ -31,6 +31,9 @@ class VideoGenerator:
             if result and hasattr(result, "generated_videos") and result.generated_videos:
                 video_object = result.generated_videos[0].video
                 if video_object:
+                    if not video_object.video_bytes and settings.api_key:
+                        # Gemini API returns a file reference; download it before saving.
+                        self.client.files.download(file=video_object)
                     video_object.save(output_file)
                     print(f"Video saved as {output_file}")
                 else:
@@ -63,7 +66,7 @@ class VideoGenerator:
         duration: int = 8,
         aspect_ratio: str = "16:9",
         generate_audio: bool = True,
-        person_generation: str = "allow_adult",
+        person_generation: str = "auto",
         negative_prompt: Optional[str] = None,
         number_of_videos: int = 1,
         image_path: Optional[str] = None,
@@ -98,16 +101,27 @@ class VideoGenerator:
         # Cast ref_images to Any or the correct type list to satisfy mypy if needed
         config_ref_images = cast(Any, ref_images) if ref_images else None
 
-        config = types.GenerateVideosConfig(
+        if person_generation == "auto":
+            # Veo 3.1: text-to-video takes allow_all; image-based generation takes allow_adult.
+            has_image = bool(input_image or last_frame_image or ref_images)
+            person_generation = "allow_adult" if has_image else "allow_all"
+
+        config_kwargs: dict[str, Any] = dict(
             aspect_ratio=aspect_ratio,
             number_of_videos=number_of_videos,
             duration_seconds=duration,
             person_generation=person_generation,
-            generate_audio=generate_audio,
             negative_prompt=negative_prompt,
             last_frame=last_frame_image,
             reference_images=config_ref_images,
         )
+        if settings.api_key:
+            # The Gemini API rejects generate_audio: Veo 3.1 there always produces sound.
+            if not generate_audio:
+                print("Note: --no-audio is ignored with an API key; Veo 3.1 always adds sound (ffmpeg -an strips it).")
+        else:
+            config_kwargs["generate_audio"] = generate_audio
+        config = types.GenerateVideosConfig(**config_kwargs)
 
         operation = self.client.models.generate_videos(
             model=settings.model_id,

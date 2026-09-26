@@ -101,9 +101,9 @@ def main() -> None:
     parser.add_argument(
         "-pg",
         "--person-generation",
-        default="allow_adult",
-        choices=["allow_adult", "dont_allow"],
-        help="Person generation policy.",
+        default="auto",
+        choices=["auto", "allow_all", "allow_adult", "dont_allow"],
+        help="Person generation policy (auto: allow_all for text-to-video, allow_adult with images).",
     )
 
     # History
@@ -117,7 +117,7 @@ def main() -> None:
         default=settings.model_id,
         help="Veo model: standard, fast, lite, or a full model ID (default: Veo 3.1 standard).",
     )
-    parser.add_argument("-v", "--version", action="version", version="%(prog)s 0.2.0")
+    parser.add_argument("-v", "--version", action="version", version="%(prog)s 0.2.1")
 
     args = parser.parse_args()
     history_manager = HistoryManager()
