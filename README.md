@@ -1,5 +1,7 @@
 # Vidius
 
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.23755681.svg)](https://doi.org/10.5281/zenodo.23755681)
+
 A CLI (`v0.2.1`) for generating and extending videos with Google's **Veo 3.1** models (`standard`, `fast`, `lite`). Serves as both a standalone video generator and the video leaf tool for **Mirage**.
 
 See [SPEC.md](SPEC.md) for the full system specification, architecture, cost model, and requirement traceability.
