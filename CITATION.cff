@@ -1,0 +1,22 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+type: software
+authors:
+  - family-names: "Forsyth"
+    given-names: "Charles E."
+    name-particle: "III"
+    orcid: "https://orcid.org/0000-0003-4872-0296"
+    affiliation: "University of California, Riverside"
+title: "Vidius: Veo 3.1 Video Generation CLI"
+version: "0.2.1"
+date-released: "2026-10-29"
+repository-code: "https://github.com/charles-forsyth/vidius"
+license: "MIT"
+keywords:
+  - "veo"
+  - "video-generation"
+  - "vertex-ai"
+  - "gemini"
+  - "multimodal"
+  - "text-to-video"
+  - "cli"
